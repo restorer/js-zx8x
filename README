@@ -1,0 +1,4 @@
+ZX80 emulator written in javascript.
+Includes perfect Z80 emulation core (undocummented instructions, memptr).
+
+Demo: http://nocanvas.zame-dev.org/0004/

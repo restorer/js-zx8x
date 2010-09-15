@@ -1,0 +1,1222 @@
+/*
+ * zame-z80
+ * Copyright 2010, Slava Tretyak
+ */
+
+#define OP_NOP(FN,...) \
+	DECL_FUNC FN() { \
+		__VA_ARGS__ \
+	}
+
+#define OP_LD_RP_NN(FN,SET_RP,...) \
+	DECL_FUNC FN() { \
+		DO_READ_WORD; \
+		SET_RP(TMP_WORD); \
+		TSTATE_ADD(10-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_LD_MRP_A(FN,GET_RP,...) \
+	DECL_FUNC FN() { \
+		SET_MP(REG_A << 8 | (GET_RP + 1 & 0xFF)); \
+		PTR_WRITE(GET_RP, REG_A); \
+		TSTATE_ADD(7-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_DO_RP(FN,DO,SET_RP,GET_RP,...) \
+	DECL_FUNC FN() { \
+		DO(SET_RP, GET_RP); \
+		TSTATE_ADD(6-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_LD_R_N(FN,R,...) \
+	DECL_FUNC FN() { \
+		R = READ_BYTE(); \
+		TSTATE_ADD(7-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_ADD_RP_RP(FN,SET_RP1,GET_RP1,GET_RP2,...) \
+	DECL_FUNC FN() { \
+		DO_ADD_16(SET_RP1, GET_RP1, GET_RP2); \
+		TSTATE_ADD(11-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_LD_A_MRP(FN,GET_RP,...) \
+	DECL_FUNC FN() { \
+		REG_A = PTR_READ(GET_RP); \
+		SET_MP(GET_RP + 1 & 0xFFFF); \
+		TSTATE_ADD(7-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_DO_R(FN,DO,R,...) \
+	DECL_FUNC FN() { \
+		DO(R); \
+		__VA_ARGS__ \
+	}
+
+#define OP_DO_MHL(FN,DO,...) \
+	DECL_FUNC FN() { \
+		TMP_BYTE = PTR_READ(GET_HL); \
+		DO(TMP_BYTE); \
+		PTR_WRITE(GET_HL, TMP_BYTE); \
+		TSTATE_ADD(11-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_DO_ORP(FN,DO,GET_RP) \
+	DECL_FUNC FN() { \
+		DO_READ_OFFSET(GET_RP); \
+		TMP_ADDR = GET_RP + TMP_INT8 & 0xFFFF; \
+		TMP_BYTE = PTR_READ(TMP_ADDR); \
+		DO(TMP_BYTE); \
+		PTR_WRITE(TMP_ADDR, TMP_BYTE); \
+		TSTATE_ADD(19-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_LD_DO_R_PORP(FN,DO,R,GET_RP) \
+	DECL_FUNC FN() { \
+		TMP_ADDR = GET_RP + TMP_INT8 & 0xFFFF; \
+		SET_MP(TMP_ADDR); \
+		TMP_BYTE = PTR_READ(TMP_ADDR); \
+		DO(TMP_BYTE); \
+		R = TMP_BYTE; \
+		PTR_WRITE(TMP_ADDR, TMP_BYTE); \
+		TSTATE_ADD(19-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_DO_PORP(FN,DO,GET_RP) \
+	DECL_FUNC FN() { \
+		TMP_ADDR = GET_RP + TMP_INT8 & 0xFFFF; \
+		SET_MP(TMP_ADDR); \
+		TMP_BYTE = PTR_READ(TMP_ADDR); \
+		DO(TMP_BYTE); \
+		PTR_WRITE(TMP_ADDR, TMP_BYTE); \
+		TSTATE_ADD(19-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_RLCA(FN,...) \
+	DECL_FUNC FN() { \
+		REG_A = REG_A << 1 & 0xFF | REG_A >> 7; \
+		REG_F = REG_F & (FLAG_PV | FLAG_Z | FLAG_S) | REG_A & (FLAG_C | FLAG_3 | FLAG_5); \
+		__VA_ARGS__ \
+	}
+
+#define OP_RRCA(FN,...) \
+	DECL_FUNC FN() { \
+		REG_F = REG_F & (FLAG_PV | FLAG_Z | FLAG_S) | REG_A & FLAG_C; \
+		REG_A = REG_A >> 1 | REG_A << 7 & 0xFF; \
+		REG_F |= REG_A & (FLAG_3 | FLAG_5); \
+		__VA_ARGS__ \
+	}
+
+#define OP_RLA(FN,...) \
+	DECL_FUNC FN() { \
+		TMP_BYTE = REG_A; \
+		REG_A = REG_A << 1 & 0xFF | REG_F & FLAG_C; \
+		REG_F = REG_F & (FLAG_PV | FLAG_Z | FLAG_S) | REG_A & (FLAG_3 | FLAG_5) | TMP_BYTE >> 7; \
+		__VA_ARGS__ \
+	}
+
+#define OP_RRA(FN,...) \
+	DECL_FUNC FN() { \
+		TMP_BYTE = REG_A; \
+		REG_A = REG_A >> 1 | REG_F << 7 & 0xFF; \
+		REG_F = REG_F & (FLAG_PV | FLAG_Z | FLAG_S) | REG_A & (FLAG_3 | FLAG_5) | TMP_BYTE & FLAG_C; \
+		__VA_ARGS__ \
+	}
+
+#define OP_EX_AF_AF_(FN,...) \
+	DECL_FUNC FN() { \
+		TMP_WORD = GET_AF; \
+		SET_AF(GET_AF_); \
+		SET_AF_(TMP_WORD); \
+		__VA_ARGS__ \
+	}
+
+#define OP_DJNZ(FN,...) \
+	DECL_FUNC FN() { \
+		TMP_INT8 = READ_BYTE(); \
+		if (TMP_INT8 > 127) TMP_INT8 -= 256; \
+		REG_B = REG_B - 1 & 0xFF; \
+		if (REG_B) { \
+			SET_PC(GET_PC + TMP_INT8 & 0xFFFF); \
+			SET_MP(GET_PC); \
+			TSTATE_ADD(13-4); \
+		} else { \
+			TSTATE_ADD(8-4); \
+		} \
+		__VA_ARGS__ \
+	}
+
+#define OP_JR(FN,...) \
+	DECL_FUNC FN() { \
+		TMP_INT8 = READ_BYTE(); \
+		if (TMP_INT8 > 127) TMP_INT8 -= 256; \
+		SET_PC(GET_PC + TMP_INT8  & 0xFFFF); \
+		SET_MP(GET_PC); \
+		TSTATE_ADD(12-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_LD_R_R(FN,R1,R2,...) \
+	DECL_FUNC FN() { \
+		R1 = R2; \
+		__VA_ARGS__ \
+	}
+
+#define OP_LD_R_MRP(FN,R,GET_RP) \
+	DECL_FUNC FN() { \
+		R = PTR_READ(GET_RP); \
+		TSTATE_ADD(7-4); \
+	}
+
+#define OP_LD_R_ORP(FN,R,GET_RP) \
+	DECL_FUNC FN() { \
+		DO_READ_OFFSET(GET_RP); \
+		R = PTR_READ(GET_RP + TMP_INT8 & 0xFFFF); \
+		TSTATE_ADD(15-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_LD_MRP_R(FN,GET_RP,R,...) \
+	DECL_FUNC FN() { \
+		PTR_WRITE(GET_RP, R); \
+		TSTATE_ADD(7-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_LD_ORP_R(FN,GET_RP,R) \
+	DECL_FUNC FN() { \
+		DO_READ_OFFSET(GET_RP); \
+		PTR_WRITE(GET_RP + TMP_INT8 & 0xFFFF, R); \
+		TSTATE_ADD(15-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_HALT(FN,...) \
+	DECL_FUNC FN() { \
+		CPU_HALTED = true; \
+		SET_PC(GET_PC - 1 & 0xFFFF); \
+		__VA_ARGS__ \
+	}
+
+#define OP_JR_CC(FN,CC,...) \
+	DECL_FUNC FN() { \
+		TMP_INT8 = READ_BYTE(); \
+		if (TMP_INT8 > 127) TMP_INT8 -= 256; \
+		if (CC) { \
+			SET_PC(GET_PC + TMP_INT8 & 0xFFFF); \
+			SET_MP(GET_PC); \
+			TSTATE_ADD(12-4); \
+		} else {\
+			TSTATE_ADD(7-4); \
+		} \
+		__VA_ARGS__ \
+	}
+
+#define OP_LD_MNN_RP(FN,RL,RH,...) \
+	DECL_FUNC FN() { \
+		DO_READ_WORD; \
+		SET_MP(TMP_WORD + 1 & 0xFFFF); \
+		PTR_WRITE(TMP_WORD, RL); \
+		PTR_WRITE(TMP_WORD + 1 & 0xFFFF, RH); \
+		TSTATE_ADD(16-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_DAA(FN,...) \
+	DECL_FUNC FN() { \
+		TMP_BYTE = REG_A; \
+		if (REG_F & FLAG_N) { \
+			if ((REG_F & FLAG_H) || ((REG_A & 0x0F) > 9)) TMP_BYTE -= 6; \
+			if ((REG_F & FLAG_C) || (REG_A > 0x99)) TMP_BYTE -= 0x60; \
+		} else { \
+			if ((REG_F & FLAG_H) || ((REG_A & 0x0F) > 9)) TMP_BYTE += 6; \
+			if ((REG_F & FLAG_C) || (REG_A > 0x99)) TMP_BYTE += 0x60; \
+		} \
+		TMP_BYTE &= 0xFF; \
+		REG_F = REG_F & (FLAG_N | FLAG_C) \
+				| TMP_BYTE & (FLAG_S | FLAG_5 | FLAG_3) \
+				| (TMP_BYTE ? 0 : FLAG_Z) \
+				| Cpu.tbl_parity[TMP_BYTE] \
+				| (TMP_BYTE ^ REG_A) & FLAG_H \
+				| (REG_A > 0x99 ? FLAG_C : 0); \
+		REG_A = TMP_BYTE; \
+		__VA_ARGS__ \
+	}
+
+#define OP_LD_RP_MNN(FN,RL,RH,...) \
+	DECL_FUNC FN() { \
+		DO_READ_WORD; \
+		RL = PTR_READ(TMP_WORD); \
+		RH = PTR_READ(TMP_WORD + 1 & 0xFFFF); \
+		SET_MP(TMP_WORD + 1 & 0xFFFF); \
+		TSTATE_ADD(16-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_CPL(FN,...) \
+	DECL_FUNC FN() { \
+		REG_A ^= 0xFF; \
+		REG_F = REG_F & (FLAG_C | FLAG_PV | FLAG_Z | FLAG_S) | REG_A & (FLAG_3 | FLAG_5) | (FLAG_N | FLAG_H); \
+		__VA_ARGS__ \
+	}
+
+#define OP_LD_MNN_A(FN,...) \
+	DECL_FUNC FN() { \
+		DO_READ_WORD; \
+		SET_MP(REG_A << 8 | (TMP_WORD + 1 & 0xFF)); \
+		PTR_WRITE(TMP_WORD, REG_A); \
+		TSTATE_ADD(13-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_LD_MHL_N(FN,...) \
+	DECL_FUNC FN() { \
+		TMP_BYTE = READ_BYTE(); \
+		PTR_WRITE(GET_HL, TMP_BYTE); \
+		TSTATE_ADD(10-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_LD_ORP_N(FN,GET_RP) \
+	DECL_FUNC FN() { \
+		DO_READ_OFFSET(GET_RP); \
+		TMP_BYTE = READ_BYTE(); \
+		PTR_WRITE(GET_RP + TMP_INT8 & 0xFFFF, TMP_BYTE); \
+		TSTATE_ADD(15-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_SCF(FN,...) \
+	DECL_FUNC FN() { \
+		REG_F = REG_F & (FLAG_PV | FLAG_Z | FLAG_S) | REG_A & (FLAG_5 | FLAG_3) | FLAG_C; \
+		__VA_ARGS__ \
+	}
+
+#define OP_LD_A_MNN(FN,...) \
+	DECL_FUNC FN() { \
+		DO_READ_WORD; \
+		REG_A = PTR_READ(TMP_WORD); \
+		SET_MP(TMP_WORD + 1 & 0xFFFF); \
+		TSTATE_ADD(13-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_CCF(FN,...) \
+	DECL_FUNC FN() { \
+		REG_F = REG_F & (FLAG_PV | FLAG_Z | FLAG_S) | (REG_F & FLAG_C) << FLAG_C_TO_H | (REG_F & FLAG_C) ^ FLAG_C | REG_A & (FLAG_3 | FLAG_5); \
+		__VA_ARGS__ \
+	}
+
+#define OP_DO_A_R(FN,DO,R,...) \
+	DECL_FUNC FN() { \
+		DO(REG_A, R); \
+		__VA_ARGS__ \
+	}
+
+#define OP_DO_A_MHL(FN,DO,...) \
+	DECL_FUNC FN() { \
+		TMP_BYTE = PTR_READ(GET_HL); \
+		DO(REG_A, TMP_BYTE); \
+		TSTATE_ADD(7-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_DO_A_ORP(FN,DO,GET_RP) \
+	DECL_FUNC FN() { \
+		DO_READ_OFFSET(GET_RP); \
+		TMP_BYTE = PTR_READ(GET_RP + TMP_INT8 & 0xFFFF); \
+		DO(REG_A, TMP_BYTE); \
+		TSTATE_ADD(15-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_RET_CC(FN,CC,...) \
+	DECL_FUNC FN() { \
+		if (CC) { \
+			DO_RET; \
+			TSTATE_ADD(11-4); \
+		} else { \
+			TSTATE_ADD(5-4); \
+		} \
+		__VA_ARGS__ \
+	}
+
+#define OP_POP_RP(FN,SET_RP,...) \
+	DECL_FUNC FN() { \
+		DO_POP_TMP; \
+		SET_RP(TMP_WORD); \
+		TSTATE_ADD(10-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_JP_CC(FN,CC,...) \
+	DECL_FUNC FN() { \
+		DO_READ_WORD; \
+		SET_MP(TMP_WORD); \
+		if (CC) { \
+			SET_PC(TMP_WORD); \
+		} \
+		TSTATE_ADD(10-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_JP(FN,...) \
+	DECL_FUNC FN() { \
+		DO_READ_WORD; \
+		SET_PC(TMP_WORD); \
+		SET_MP(TMP_WORD); \
+		TSTATE_ADD(10-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_CALL_CC(FN,CC,...) \
+	DECL_FUNC FN() { \
+		DO_READ_WORD; \
+		SET_MP(TMP_WORD); \
+		if (CC) { \
+			DO_PUSH(GET_PC); \
+			SET_PC(TMP_WORD); \
+			TSTATE_ADD(17-4); \
+		} else { \
+			TSTATE_ADD(10-4); \
+		} \
+		__VA_ARGS__ \
+	}
+
+#define OP_PUSH_RP(FN,GET_RP,...) \
+	DECL_FUNC FN() { \
+		DO_PUSH(GET_RP); \
+		TSTATE_ADD(11-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_DO_A_N(FN,DO,...) \
+	DECL_FUNC FN() { \
+		TMP_BYTE = READ_BYTE(); \
+		DO(REG_A, TMP_BYTE); \
+		TSTATE_ADD(7-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_RST(FN,ADDR,...) \
+	DECL_FUNC FN() { \
+		DO_PUSH(GET_PC); \
+		SET_PC(ADDR); \
+		SET_MP(ADDR); \
+		TSTATE_ADD(11-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_RET(FN,...) \
+	DECL_FUNC FN() { \
+		DO_RET; \
+		TSTATE_ADD(10-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_CALL(FN,...) \
+	DECL_FUNC FN() { \
+		DO_READ_WORD; \
+		DO_PUSH(GET_PC); \
+		SET_PC(TMP_WORD); \
+		SET_MP(TMP_WORD); \
+		TSTATE_ADD(17-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_OUT_N_A(FN,...) \
+	DECL_FUNC FN() { \
+		TMP_WORD = REG_A << 8 | READ_BYTE(); \
+		DO_OUT(TMP_WORD, REG_A); \
+		TSTATE_ADD(11-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_EXX(FN,...) \
+	DECL_FUNC FN() { \
+		TMP_WORD = GET_BC; SET_BC(GET_BC_); SET_BC_(TMP_WORD); \
+		TMP_WORD = GET_DE; SET_DE(GET_DE_); SET_DE_(TMP_WORD); \
+		TMP_WORD = GET_HL; SET_HL(GET_HL_); SET_HL_(TMP_WORD); \
+		__VA_ARGS__ \
+	}
+
+#define OP_IN_A_N(FN,...) \
+	DECL_FUNC FN() { \
+		TMP_WORD = REG_A << 8 | READ_BYTE(); \
+		DO_IN(REG_A, TMP_WORD); \
+		TSTATE_ADD(11-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_EX_SP_RP(FN,RL,RH,SET_RP,...) \
+	DECL_FUNC FN() { \
+		TMP_WORD = PTR_READ(GET_SP); \
+		TMP_WORD |= PTR_READ(GET_SP + 1 & 0xFFFF) << 8; \
+		SET_MP(TMP_WORD); \
+		PTR_WRITE(GET_SP, RL); \
+		PTR_WRITE(GET_SP + 1 & 0xFFFF, RH); \
+		SET_RP(TMP_WORD); \
+		TSTATE_ADD(19-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_JP_RP(FN,GET_RP,...) \
+	DECL_FUNC FN() { \
+		SET_PC(GET_RP); \
+		__VA_ARGS__ \
+	}
+
+#define OP_EX_DE_HL(FN,...) \
+	DECL_FUNC FN() { \
+		TMP_WORD = GET_DE; \
+		SET_DE(GET_HL); \
+		SET_HL(TMP_WORD); \
+		__VA_ARGS__ \
+	}
+
+#define OP_DI(FN,...) \
+	DECL_FUNC FN() { \
+		REG_IFF1 = 0; \
+		REG_IFF2 = 0; \
+		__VA_ARGS__ \
+	}
+
+#define OP_LD_SP_RP(FN,GET_RP,...) \
+	DECL_FUNC FN() { \
+		SET_SP(GET_RP); \
+		TSTATE_ADD(6-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_EI(FN,...) \
+	DECL_FUNC FN() { \
+		REG_IFF1 = 1; \
+		REG_IFF2 = 1; \
+		CPU_NOINT = true; \
+		__VA_ARGS__ \
+	}
+
+#define OP_BIT_R(FN,BIT,R,...) \
+	DECL_FUNC FN() { \
+		TMP_BYTE = R & (0x01 << (BIT)); \
+		REG_F = REG_F & FLAG_C | FLAG_H \
+				| TMP_BYTE & (FLAG_S | FLAG_5 | FLAG_3) | (TMP_BYTE ? 0 : FLAG_Z) | Cpu.tbl_parity[TMP_BYTE] \
+				| R & (FLAG_5 | FLAG_3); \
+		__VA_ARGS__ \
+	}
+
+#define OP_BIT_MHL(FN,BIT,...) \
+	DECL_FUNC FN() { \
+		DO_BIT_M(GET_HL, BIT); \
+		TSTATE_ADD(8-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_BIT_PORP(FN,BIT,GET_RP) \
+	DECL_FUNC FN() { \
+		TMP_ADDR = GET_RP + TMP_INT8 & 0xFFFF; \
+		SET_MP(TMP_ADDR); \
+		DO_BIT_M(TMP_ADDR, BIT); \
+		TSTATE_ADD(16-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_RES_R(FN,BIT,R,...) \
+	DECL_FUNC FN() { \
+		R &= 0xFF ^ (0x01 << (BIT)); \
+		__VA_ARGS__ \
+	}
+
+#define OP_RES_MHL(FN,BIT,...) \
+	DECL_FUNC FN() { \
+		TMP_BYTE = PTR_READ(GET_HL); \
+		TMP_BYTE &= 0xFF ^ (0x01 << (BIT)); \
+		PTR_WRITE(GET_HL, TMP_BYTE); \
+		TSTATE_ADD(11-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_LD_RES_PORP(FN,BIT,R,GET_RP) \
+	DECL_FUNC FN() { \
+		TMP_ADDR = GET_RP + TMP_INT8 & 0xFFFF; \
+		SET_MP(TMP_ADDR); \
+		TMP_BYTE = PTR_READ(TMP_ADDR); \
+		TMP_BYTE &= 0xFF ^ (0x01 << (BIT)); \
+		R = TMP_BYTE; \
+		PTR_WRITE(TMP_ADDR, TMP_BYTE); \
+		TSTATE_ADD(19-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_RES_PORP(FN,BIT,GET_RP) \
+	DECL_FUNC FN() { \
+		TMP_ADDR = GET_RP + TMP_INT8 & 0xFFFF; \
+		SET_MP(TMP_ADDR); \
+		TMP_BYTE = PTR_READ(TMP_ADDR); \
+		TMP_BYTE &= 0xFF ^ (0x01 << (BIT)); \
+		PTR_WRITE(TMP_ADDR, TMP_BYTE); \
+		TSTATE_ADD(19-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_SET_R(FN,BIT,R,...) \
+	DECL_FUNC FN() { \
+		R |= 0x01 << (BIT); \
+		__VA_ARGS__ \
+	}
+
+#define OP_SET_MHL(FN,BIT,...) \
+	DECL_FUNC FN() { \
+		TMP_BYTE = PTR_READ(GET_HL); \
+		TMP_BYTE |= 0x01 << (BIT); \
+		PTR_WRITE(GET_HL, TMP_BYTE); \
+		TSTATE_ADD(11-4); \
+		__VA_ARGS__ \
+	}
+
+#define OP_LD_SET_PORP(FN,BIT,R,GET_RP) \
+	DECL_FUNC FN() { \
+		TMP_ADDR = GET_RP + TMP_INT8 & 0xFFFF; \
+		SET_MP(TMP_ADDR); \
+		TMP_BYTE = PTR_READ(TMP_ADDR); \
+		TMP_BYTE |= 0x01 << (BIT); \
+		R = TMP_BYTE; \
+		PTR_WRITE(TMP_ADDR, TMP_BYTE); \
+		TSTATE_ADD(19-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_SET_PORP(FN,BIT,GET_RP) \
+	DECL_FUNC FN() { \
+		TMP_ADDR = GET_RP + TMP_INT8 & 0xFFFF; \
+		SET_MP(TMP_ADDR); \
+		TMP_BYTE = PTR_READ(TMP_ADDR); \
+		TMP_BYTE |= 0x01 << (BIT); \
+		PTR_WRITE(TMP_ADDR, TMP_BYTE); \
+		TSTATE_ADD(19-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_IN_R_BC_P00(FN,R) \
+	DECL_FUNC FN() { \
+		R = PTR_IN(GET_BC); \
+		SET_MP(GET_BC + 1 & 0xFFFF); \
+		REG_F = REG_F & FLAG_C | R & (FLAG_S | FLAG_5 | FLAG_3) | (R ? 0 : FLAG_Z) | Cpu.tbl_parity[R]; \
+		TSTATE_ADD(8-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_OUT_BC_R_P00(FN,R) \
+	DECL_FUNC FN() { \
+		PTR_OUT(GET_BC, R); \
+		SET_MP(GET_BC + 1 & 0xFFFF); \
+		TSTATE_ADD(8-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_IN_F_BC_P00(FN) \
+	DECL_FUNC FN() { \
+		TMP_BYTE = PTR_IN(GET_BC); \
+		SET_MP(GET_BC + 1 & 0xFFFF); \
+		REG_F = REG_F & FLAG_C | TMP_BYTE & (FLAG_S | FLAG_5 | FLAG_3) | (TMP_BYTE ? 0 : FLAG_Z) | Cpu.tbl_parity[TMP_BYTE]; \
+		TSTATE_ADD(8-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_OUT_BC_0_P00(FN) \
+	DECL_FUNC FN() { \
+		PTR_OUT(GET_BC, 0); \
+		SET_MP(GET_BC + 1 & 0xFFFF); \
+		TSTATE_ADD(8-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_SBC_HL_RP_P00(FN,GET_RP) \
+	DECL_FUNC FN() { \
+		DO_SBC_16(SET_HL, GET_HL, GET_RP); \
+		TSTATE_ADD(11-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_NEG_P00(FN) \
+	DECL_FUNC FN() { \
+		TMP_BYTE = REG_A; \
+		REG_A = 0; \
+		DO_SUB_8(REG_A, TMP_BYTE); \
+		DO_PREF_00; \
+	}
+
+#define OP_RETN_P00(FN) \
+	DECL_FUNC FN() { \
+		REG_IFF1 = REG_IFF2; \
+		DO_RET; \
+		TSTATE_ADD(10-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_RETI_P00 OP_RETN_P00
+
+#define OP_IM_P00(FN,MODE) \
+	DECL_FUNC FN() { \
+		REG_IM = MODE; \
+		DO_PREF_00; \
+	}
+
+#define OP_LD_I_A_P00(FN) \
+	DECL_FUNC FN() { \
+		REG_I = REG_A; \
+		TSTATE_ADD(5-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_ADC_HL_RP_P00(FN,GET_RP) \
+	DECL_FUNC FN() { \
+		DO_ADC_16(SET_HL, GET_HL, GET_RP); \
+		TSTATE_ADD(11-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_LD_RR_A_P00(FN) \
+	DECL_FUNC FN() { \
+		REG_R = REG_A; \
+		TSTATE_ADD(5-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_LD_A_I_P00(FN) \
+	DECL_FUNC FN() { \
+		REG_A = REG_I; \
+		REG_F = REG_F & FLAG_C | REG_A & (FLAG_S | FLAG_5 | FLAG_3) | (REG_A ? 0 : FLAG_Z) | REG_IFF2 << FLAG_PV_IFF_S8; \
+		CPU_RESET_PV = true; \
+		TSTATE_ADD(5-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_LD_A_RR_P00(FN) \
+	DECL_FUNC FN() { \
+		REG_A = REG_R; \
+		REG_F = REG_F & FLAG_C | REG_A & (FLAG_S | FLAG_5 | FLAG_3) | (REG_A ? 0 : FLAG_Z) | REG_IFF2 << FLAG_PV_IFF_S8; \
+		CPU_RESET_PV = true; \
+		TSTATE_ADD(5-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_RRD_P00(FN) \
+	DECL_FUNC FN() { \
+		TMP_BYTE = PTR_READ(GET_HL); \
+		PTR_WRITE(GET_HL, REG_A << 4 & 0xFF | TMP_BYTE >> 4); \
+		REG_A = REG_A & 0xF0 | TMP_BYTE & 0x0F; \
+		REG_F = REG_F & FLAG_C | REG_A & (FLAG_S | FLAG_5 | FLAG_3) | (REG_A ? 0 : FLAG_Z) | Cpu.tbl_parity[REG_A]; \
+		SET_MP(GET_HL + 1 & 0xFFFF); \
+		TSTATE_ADD(14-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_RLD_P00(FN) \
+	DECL_FUNC FN() { \
+		TMP_BYTE = PTR_READ(GET_HL); \
+		PTR_WRITE(GET_HL, TMP_BYTE << 4 & 0xFF | REG_A & 0x0F); \
+		REG_A = REG_A & 0xF0 | TMP_BYTE >> 4; \
+		REG_F = REG_F & FLAG_C | REG_A & (FLAG_S | FLAG_5 | FLAG_3) | (REG_A ? 0 : FLAG_Z) | Cpu.tbl_parity[REG_A]; \
+		SET_MP(GET_HL + 1 & 0xFFFF); \
+		TSTATE_ADD(14-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_LDI_P00(FN) \
+	DECL_FUNC FN() { \
+		DO_REP_LD; \
+		DO_REP_LD_INC; \
+		DO_PREF_00; \
+	}
+
+#define OP_LDD_P00(FN) \
+	DECL_FUNC FN() { \
+		DO_REP_LD; \
+		DO_REP_LD_DEC; \
+		DO_PREF_00; \
+	}
+
+#define OP_LDIR_P00(FN) \
+	DECL_FUNC FN() { \
+		DO_REP_LD; \
+		DO_REP_LD_INCR; \
+		DO_PREF_00; \
+	}
+
+#define OP_LDDR_P00(FN) \
+	DECL_FUNC FN() { \
+		DO_REP_LD; \
+		DO_REP_LD_DECR; \
+		DO_PREF_00; \
+	}
+
+#define OP_CPI_P00(FN) \
+	DECL_FUNC FN() { \
+		DO_REP_CP; \
+		DO_REP_CP_INC; \
+		DO_PREF_00; \
+	}
+
+#define OP_CPD_P00(FN) \
+	DECL_FUNC FN() { \
+		DO_REP_CP; \
+		DO_REP_CP_DEC; \
+		DO_PREF_00; \
+	}
+
+#define OP_CPIR_P00(FN) \
+	DECL_FUNC FN() { \
+		DO_REP_CP; \
+		DO_REP_CP_INCR; \
+		DO_PREF_00; \
+	}
+
+#define OP_CPDR_P00(FN) \
+	DECL_FUNC FN() { \
+		DO_REP_CP; \
+		DO_REP_CP_DECR; \
+		DO_PREF_00; \
+	}
+
+#define OP_INI_P00(FN) \
+	DECL_FUNC FN() { \
+		DO_REP_INI; \
+		TSTATE_ADD(12-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_IND_P00(FN) \
+	DECL_FUNC FN() { \
+		DO_REP_IND; \
+		TSTATE_ADD(12-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_INIR_P00(FN) \
+	DECL_FUNC FN() { \
+		DO_REP_INI; \
+		DO_REP_IN_OUT_REP; \
+		DO_PREF_00; \
+	}
+
+#define OP_INDR_P00(FN) \
+	DECL_FUNC FN() { \
+		DO_REP_IND; \
+		DO_REP_IN_OUT_REP; \
+		DO_PREF_00; \
+	}
+
+#define OP_OUTI_P00(FN) \
+	DECL_FUNC FN() { \
+		DO_REP_OUTI; \
+		TSTATE_ADD(12-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_OUTD_P00(FN) \
+	DECL_FUNC FN() { \
+		DO_REP_OUTD; \
+		TSTATE_ADD(12-4); \
+		DO_PREF_00; \
+	}
+
+#define OP_OTIR_P00(FN) \
+	DECL_FUNC FN() { \
+		DO_REP_OUTI; \
+		DO_REP_IN_OUT_REP; \
+		DO_PREF_00; \
+	}
+
+#define OP_OTDR_P00(FN) \
+	DECL_FUNC FN() { \
+		DO_REP_OUTD; \
+		DO_REP_IN_OUT_REP; \
+		DO_PREF_00; \
+	}
+
+#define OP_PREF_CB(FN) \
+	DECL_FUNC FN() { \
+		CPU_PREFIX = 0xCB; \
+		CPU_OPTABLE = optable_CB; \
+		CPU_NOINT = true; \
+	}
+
+#define OP_PREF_DD(FN) \
+	DECL_FUNC FN() { \
+		CPU_PREFIX = 0xDD; \
+		CPU_OPTABLE = optable_DD; \
+		CPU_NOINT = true; \
+	}
+
+#define OP_PREF_ED(FN) \
+	DECL_FUNC FN() { \
+		CPU_PREFIX = 0xED; \
+		CPU_OPTABLE = optable_ED; \
+		CPU_NOINT = true; \
+	}
+
+#define OP_PREF_FD(FN) \
+	DECL_FUNC FN() { \
+		CPU_PREFIX = 0xFD; \
+		CPU_OPTABLE = optable_FD; \
+		CPU_NOINT = true; \
+	}
+
+#define OP_PREF_XX_CB(FN,OPTBL) \
+	DECL_FUNC FN() { \
+		TMP_INT8 = READ_OFFSET(); \
+		CPU_CALL_FUNC(OPTBL[READ_BYTE()]); \
+	}
+
+#define CC_NZ	!(REG_F & FLAG_Z)
+#define CC_Z	REG_F & FLAG_Z
+#define CC_NC	!(REG_F & FLAG_C)
+#define CC_C	REG_F & FLAG_C
+#define CC_PO	!(REG_F & FLAG_PV)	// parity odd
+#define CC_PE	REG_F & FLAG_PV		// parity even
+#define CC_P	!(REG_F & FLAG_S)	// positive
+#define CC_M	REG_F & FLAG_S		// minus
+
+#define DO_PREF_00 \
+	CPU_PREFIX = 0x00; \
+	CPU_OPTABLE = optable_00;
+
+#define DO_INC_16(S,G) \
+	S(G + 1 & 0xFFFF);
+
+#define DO_DEC_16(S,X) \
+	S(X - 1 & 0xFFFF);
+
+#define DO_ADD_16(S,X,Y) \
+	TMP_DWORD = X + Y; \
+	TMP_WORD_B = (X & 0x0FFF) + (Y & 0x0FFF); \
+	SET_MP(X + 1 & 0xFFFF); \
+	S(TMP_DWORD & 0xFFFF); \
+	REG_F = REG_F & (FLAG_PV | FLAG_Z | FLAG_S) \
+			| (TMP_DWORD & FLAG_C_M16) >> FLAG_C_S16 \
+			| (TMP_DWORD >> 8) & (FLAG_5 | FLAG_3) \
+			| (TMP_WORD_B & FLAG_H_M16) >> FLAG_H_S16;
+
+#define DO_ADC_16(S,X,Y) \
+	TMP_DWORD = X + Y + (REG_F & FLAG_C); \
+	TMP_WORD_B = (X & 0x0FFF) + (Y & 0x0FFF) + (REG_F & FLAG_C); \
+	TMP_INT32 = CONV_INT16(X) + CONV_INT16(Y) + (REG_F & FLAG_C); \
+	SET_MP(X + 1 & 0xFFFF); \
+	S(TMP_DWORD & 0xFFFF); \
+	REG_F = (TMP_DWORD & FLAG_C_M16) >> FLAG_C_S16 \
+			| (TMP_WORD_B & FLAG_H_M16) >> FLAG_H_S16 \
+			| (TMP_INT32 < -32768 || TMP_INT32 > 32767 ? FLAG_PV : 0) \
+			| ((TMP_DWORD >> 8) & (FLAG_S | FLAG_5 | FLAG_3)) \
+			| (TMP_DWORD & 0xFFFF ? 0 : FLAG_Z);
+
+#define DO_SBC_16(S,X,Y) \
+	TMP_DWORD = X - Y - (REG_F & FLAG_C) & 0xFFFFFFFF; \
+	TMP_WORD_B = (X & 0x0FFF) - (Y & 0x0FFF) - (REG_F & FLAG_C) & 0xFFFF; \
+	TMP_INT32 = CONV_INT16(X) - CONV_INT16(Y) - (REG_F & FLAG_C); \
+	REG_F = (TMP_DWORD & FLAG_C_M16) >> FLAG_C_S16 | FLAG_N \
+			| (TMP_WORD_B & FLAG_H_M16) >> FLAG_H_S16 \
+			| (TMP_INT32 < -32768 || TMP_INT32 > 32767 ? FLAG_PV : 0) \
+			| (TMP_DWORD >> 8) & (FLAG_S | FLAG_5 | FLAG_3) \
+			| (TMP_DWORD & 0xFFFF ? 0 : FLAG_Z); \
+	SET_MP(X + 1 & 0xFFFF); \
+	S(TMP_DWORD & 0xFFFF);
+
+#define DO_INC_8(X) \
+	REG_F = REG_F & FLAG_C | ((X & 0x0F) + 1 & FLAG_H); \
+	X = X + 1 & 0xFF; \
+	REG_F |= (X & FLAG_PV_M8) >> FLAG_PV_S8 | X & (FLAG_S | FLAG_5 | FLAG_3) | (X ? 0 : FLAG_Z);
+
+#define DO_DEC_8(X) \
+	REG_F = REG_F & FLAG_C | FLAG_N | ((X & 0x0F) - 1 & FLAG_H) | (X & FLAG_PV_M8) >> FLAG_PV_S8; \
+	X = X - 1 & 0xFF; \
+	REG_F |= X & (FLAG_S | FLAG_5 | FLAG_3) | (X ? 0 : FLAG_Z);
+
+#define DO_ADD_8(X,Y) \
+	TMP_WORD = X + Y; \
+	TMP_BYTE_B = (X & 0x0F) + (Y & 0x0F); \
+	TMP_INT16 = CONV_INT8(X) + CONV_INT8(Y); \
+	REG_F = (TMP_WORD & FLAG_C_M8) >> FLAG_C_S8 \
+			| TMP_BYTE_B & FLAG_H \
+			| (TMP_INT16 < -128 || TMP_INT16 > 127 ? FLAG_PV : 0) \
+			| TMP_WORD & (FLAG_S | FLAG_5 | FLAG_3) \
+			| (TMP_WORD & 0xFF ? 0 : FLAG_Z); \
+	X = TMP_WORD & 0xFF;
+
+#define DO_ADC_8(X,Y) \
+	TMP_WORD = X + Y + (REG_F & FLAG_C); \
+	TMP_BYTE_B = (X & 0x0F) + (Y & 0x0F) + (REG_F & FLAG_C); \
+	TMP_INT16 = CONV_INT8(X) + CONV_INT8(Y) + (REG_F & FLAG_C); \
+	REG_F = (TMP_WORD & FLAG_C_M8) >> FLAG_C_S8 \
+			| TMP_BYTE_B & FLAG_H \
+			| (TMP_INT16 < -128 || TMP_INT16 > 127 ? FLAG_PV : 0) \
+			| TMP_WORD & (FLAG_S | FLAG_5 | FLAG_3) \
+			| (TMP_WORD & 0xFF ? 0 : FLAG_Z); \
+	X = TMP_WORD & 0xFF;
+
+#define DO_SUB_8(X,Y) \
+	TMP_WORD = X - Y & 0xFFFF; \
+	TMP_BYTE_B = (X & 0x0F) - (Y & 0x0F) & 0xFF; \
+	TMP_INT16 = CONV_INT8(X) - CONV_INT8(Y); \
+	REG_F = (TMP_WORD & FLAG_C_M8) >> FLAG_C_S8 | FLAG_N \
+			| TMP_BYTE_B & FLAG_H \
+			| (TMP_INT16 < -128 || TMP_INT16 > 127 ? FLAG_PV : 0) \
+			| TMP_WORD & (FLAG_S | FLAG_5 | FLAG_3) \
+			| (TMP_WORD & 0xFF ? 0 : FLAG_Z); \
+	X = TMP_WORD & 0xFF;
+
+#define DO_SBC_8(X,Y) \
+	TMP_WORD = X - Y - (REG_F & FLAG_C) & 0xFFFF; \
+	TMP_BYTE_B = (X & 0x0F) - (Y & 0x0F) - (REG_F & FLAG_C) & 0xFF; \
+	TMP_INT16 = CONV_INT8(X) - CONV_INT8(Y) - (REG_F & FLAG_C); \
+	REG_F = (TMP_WORD & FLAG_C_M8) >> FLAG_C_S8 | FLAG_N \
+			| TMP_BYTE_B & FLAG_H \
+			| (TMP_INT16 < -128 || TMP_INT16 > 127 ? FLAG_PV : 0) \
+			| TMP_WORD & (FLAG_S | FLAG_5 | FLAG_3) \
+			| (TMP_WORD & 0xFF ? 0 : FLAG_Z); \
+	X = TMP_WORD & 0xFF;
+
+#define DO_AND_8(X,Y) \
+	X &= Y; \
+	REG_F = FLAG_H | (X & (FLAG_S | FLAG_5 | FLAG_3)) | (X ? 0 : FLAG_Z) | Cpu.tbl_parity[X];
+
+#define DO_XOR_8(X,Y) \
+	X ^= Y; \
+	REG_F = X & (FLAG_S | FLAG_5 | FLAG_3) | (X ? 0 : FLAG_Z) | Cpu.tbl_parity[X];
+
+#define DO_OR_8(X,Y) \
+	X |= Y; \
+	REG_F = X & (FLAG_S | FLAG_5 | FLAG_3) | (X ? 0 : FLAG_Z) | Cpu.tbl_parity[X];
+
+#define DO_CP_8(X,Y) \
+	TMP_WORD = X - Y & 0xFFFF; \
+	TMP_BYTE_B = (X & 0x0F) - (Y & 0x0F) & 0xFF; \
+	TMP_INT16 = CONV_INT8(X) - CONV_INT8(Y); \
+	REG_F = (TMP_WORD & FLAG_C_M8) >> FLAG_C_S8 | FLAG_N \
+			| TMP_BYTE_B & FLAG_H \
+			| (TMP_INT16 < -128 || TMP_INT16 > 127 ? FLAG_PV : 0) \
+			| Y & (FLAG_5 | FLAG_3) \
+			| TMP_WORD & FLAG_S \
+			| (TMP_WORD & 0xFF ? 0 : FLAG_Z);
+
+#define DO_POP_TMP \
+	TMP_WORD = PTR_READ(GET_SP); \
+	SET_SP(GET_SP + 1 & 0xFFFF); \
+	TMP_WORD |= PTR_READ(GET_SP) << 8; \
+	SET_SP(GET_SP + 1 & 0xFFFF);
+
+#define DO_RET \
+	DO_POP_TMP; \
+	SET_PC(TMP_WORD); \
+	SET_MP(TMP_WORD);
+
+#define DO_PUSH(VAL) \
+	TMP_WORD_B = VAL; \
+	SET_SP(GET_SP - 1 & 0xFFFF); PTR_WRITE(GET_SP, TMP_WORD_B >> 8); \
+	SET_SP(GET_SP - 1 & 0xFFFF); PTR_WRITE(GET_SP, TMP_WORD_B & 0xFF);
+
+#define DO_OUT(PORT,VAL) \
+	PTR_OUT(PORT, VAL); \
+	SET_MP(REG_A << 8 | (PORT + 1 & 0xFF));
+
+#define DO_IN(VAL,PORT) \
+	VAL = PTR_IN(PORT); \
+	SET_MP(PORT + 1 & 0xFFFF);
+
+#define DO_RLC_8(X) \
+	X = X << 1 & 0xFF | X >> 7; \
+	REG_F = X & (FLAG_S | FLAG_5 | FLAG_3 | FLAG_C) | (X ? 0 : FLAG_Z) | Cpu.tbl_parity[X];
+
+#define DO_RRC_8(X) \
+	REG_F = X & FLAG_C; \
+	X = X >> 1 | X << 7 & 0xFF; \
+	REG_F |= X & (FLAG_S | FLAG_5 | FLAG_3) | (X ? 0 : FLAG_Z) | Cpu.tbl_parity[X];
+
+#define DO_RL_8(X) \
+	TMP_BYTE_B = X; \
+	X = X << 1 & 0xFF | REG_F & FLAG_C; \
+	REG_F = TMP_BYTE_B >> 7 | X & (FLAG_S | FLAG_5 | FLAG_3) | (X ? 0 : FLAG_Z) | Cpu.tbl_parity[X];
+
+#define DO_RR_8(X) \
+	TMP_BYTE_B = X; \
+	X = X >> 1 | REG_F << 7 & 0xFF; \
+	REG_F = TMP_BYTE_B & FLAG_C | X & (FLAG_S | FLAG_5 | FLAG_3) | (X ? 0 : FLAG_Z) | Cpu.tbl_parity[X];
+
+#define DO_SLA_8(X) \
+	REG_F = X >> 7; \
+	X = X << 1 & 0xFF; \
+	REG_F |= X & (FLAG_S | FLAG_5 | FLAG_3) | (X ? 0 : FLAG_Z) | Cpu.tbl_parity[X];
+
+#define DO_SRA_8(X) \
+	REG_F = X & FLAG_C; \
+	X = X & 0x80 | X >> 1; \
+	REG_F |= X & (FLAG_S | FLAG_5 | FLAG_3) | (X ? 0 : FLAG_Z) | Cpu.tbl_parity[X];
+
+#define DO_SLL_8(X) \
+	REG_F = X >> 7; \
+	X = X << 1 & 0xFF | 0x01; \
+	REG_F |= X & (FLAG_S | FLAG_5 | FLAG_3) | (X ? 0 : FLAG_Z) | Cpu.tbl_parity[X];
+
+#define DO_SRL_8(X) \
+	REG_F = X & FLAG_C; \
+	X >>= 1; \
+	REG_F |= X & (FLAG_S | FLAG_5 | FLAG_3) | (X ? 0 : FLAG_Z) | Cpu.tbl_parity[X];
+
+#define DO_BIT_M(X,BIT) \
+	TMP_BYTE = PTR_READ(X); \
+	TMP_BYTE_B = TMP_BYTE & (0x01 << (BIT)); \
+	REG_F = REG_F & FLAG_C | FLAG_H \
+			| TMP_BYTE_B & FLAG_S | (TMP_BYTE_B ? 0 : FLAG_Z) | Cpu.tbl_parity[TMP_BYTE_B] \
+			| GET_MPH & (FLAG_5 | FLAG_3);
+
+#define DO_REP_LD \
+	TMP_BYTE = PTR_READ(GET_HL); \
+	PTR_WRITE(GET_DE, TMP_BYTE); \
+	SET_BC(GET_BC - 1 & 0xFFFF); \
+	TMP_BYTE += REG_A; \
+	REG_F = REG_F & (FLAG_S | FLAG_Z | FLAG_C) | (GET_BC ? FLAG_PV : 0) \
+			| TMP_BYTE & FLAG_3 | (TMP_BYTE << FLAG_N_TO_5) & FLAG_5;
+
+#define DO_REP_LD_INC \
+	SET_HL(GET_HL + 1 & 0xFFFF); \
+	SET_DE(GET_DE + 1 & 0xFFFF); \
+	TSTATE_ADD(12-4);
+
+#define DO_REP_LD_DEC \
+	SET_HL(GET_HL - 1 & 0xFFFF); \
+	SET_DE(GET_DE - 1 & 0xFFFF); \
+	TSTATE_ADD(12-4);
+
+#define DO_REP_LD_INCR \
+	SET_HL(GET_HL + 1 & 0xFFFF); \
+	SET_DE(GET_DE + 1 & 0xFFFF); \
+	if (GET_BC) { \
+		SET_PC(GET_PC - 2 & 0xFFFF); \
+		SET_MP(GET_PC + 1 & 0xFFFF); \
+		TSTATE_ADD(17-4); \
+	} else { \
+		TSTATE_ADD(12-4); \
+	}
+
+#define DO_REP_LD_DECR \
+	SET_HL(GET_HL - 1 & 0xFFFF); \
+	SET_DE(GET_DE - 1 & 0xFFFF); \
+	if (GET_BC) { \
+		SET_PC(GET_PC - 2 & 0xFFFF); \
+		SET_MP(GET_PC + 1 & 0xFFFF); \
+		TSTATE_ADD(17-4); \
+	} else { \
+		TSTATE_ADD(12-4); \
+	}
+
+#define DO_REP_CP \
+	TMP_BYTE = PTR_READ(GET_HL); \
+	TMP_BYTE_B = (REG_A & 0x0F) - (TMP_BYTE & 0x0F) & 0xFF; \
+	TMP_BYTE = REG_A - TMP_BYTE & 0xFF; \
+	SET_BC(GET_BC - 1 & 0xFFFF); \
+	REG_F = REG_F & FLAG_C | FLAG_N | (GET_BC ? FLAG_PV : 0) \
+			| TMP_BYTE_B & FLAG_H | (TMP_BYTE ? 0 : FLAG_Z) | TMP_BYTE & FLAG_S; \
+	TMP_BYTE = TMP_BYTE - ((REG_F & FLAG_H) >> FLAG_H_TO_C) & 0xFF; \
+	REG_F |= TMP_BYTE & FLAG_3 | (TMP_BYTE << FLAG_N_TO_5) & FLAG_5;
+
+#define DO_REP_CP_INC \
+	SET_HL(GET_HL + 1 & 0xFFFF); \
+	SET_MP(GET_MP + 1 & 0xFFFF); \
+	TSTATE_ADD(12-4);
+
+#define DO_REP_CP_DEC \
+	SET_HL(GET_HL - 1 & 0xFFFF); \
+	SET_MP(GET_MP - 1 & 0xFFFF); \
+	TSTATE_ADD(12-4);
+
+#define DO_REP_CP_INCR \
+	SET_HL(GET_HL + 1 & 0xFFFF); \
+	if ((REG_F & (FLAG_Z | FLAG_PV)) == FLAG_PV) { \
+		SET_PC(GET_PC - 2 & 0xFFFF); \
+		SET_MP(GET_PC + 1 & 0xFFFF); \
+		TSTATE_ADD(17-4); \
+	} else { \
+		SET_MP(GET_MP + 1 & 0xFFFF); \
+		TSTATE_ADD(12-4); \
+	}
+
+#define DO_REP_CP_DECR \
+	SET_HL(GET_HL - 1 & 0xFFFF); \
+	if ((REG_F & (FLAG_Z | FLAG_PV)) == FLAG_PV) { \
+		SET_PC(GET_PC - 2 & 0xFFFF); \
+		SET_MP(GET_PC + 1 & 0xFFFF); \
+		TSTATE_ADD(17-4); \
+	} else { \
+		SET_MP(GET_MP + 1 & 0xFFFF); \
+		TSTATE_ADD(12-4); \
+	}
+
+#define DO_REP_INI \
+	TMP_BYTE = PTR_IN(GET_BC); \
+	PTR_WRITE(GET_HL, TMP_BYTE); \
+	SET_MP(GET_BC + 1 & 0xFFFF); \
+	REG_B = REG_B - 1 & 0xFF; \
+	SET_HL(GET_HL + 1 & 0xFFFF); \
+	TMP_WORD = TMP_BYTE + (REG_C + 1 & 0xFF); \
+	REG_F = (TMP_BYTE >> FLAG_S_TO_N) & FLAG_N \
+			| REG_B & (FLAG_S | FLAG_5 | FLAG_3) \
+			| (REG_B ? 0 : FLAG_Z) \
+			| Cpu.tbl_parity[(TMP_WORD & 0x07) ^ REG_B] \
+			| (TMP_WORD > 255 ? (FLAG_C | FLAG_H) : 0);
+
+#define DO_REP_IND \
+	TMP_BYTE = PTR_IN(GET_BC); \
+	PTR_WRITE(GET_HL, TMP_BYTE); \
+	SET_MP(GET_BC - 1 & 0xFFFF); \
+	REG_B = REG_B - 1 & 0xFF; \
+	SET_HL(GET_HL - 1 & 0xFFFF); \
+	TMP_WORD = TMP_BYTE + (REG_C - 1 & 0xFF); \
+	REG_F = (TMP_BYTE >> FLAG_S_TO_N) & FLAG_N \
+			| REG_B & (FLAG_S | FLAG_5 | FLAG_3) \
+			| (REG_B ? 0 : FLAG_Z) \
+			| Cpu.tbl_parity[(TMP_WORD & 0x07) ^ REG_B] \
+			| (TMP_WORD > 255 ? (FLAG_C | FLAG_H) : 0);
+
+#define DO_REP_IN_OUT_REP \
+	if (REG_B) { \
+		SET_PC(GET_PC - 2 & 0xFFFF); \
+		TSTATE_ADD(17-4); \
+	} else { \
+		TSTATE_ADD(12-4); \
+	}
+
+#define DO_REP_OUTI \
+	TMP_BYTE = PTR_READ(GET_HL); \
+	REG_B = REG_B - 1 & 0xFF; \
+	SET_MP(GET_BC + 1 & 0xFFFF); \
+	PTR_OUT(GET_BC, TMP_BYTE); \
+	SET_HL(GET_HL + 1 & 0xFFFF); \
+	TMP_WORD = TMP_BYTE + REG_L; \
+	REG_F = (TMP_BYTE >> FLAG_S_TO_N) & FLAG_N \
+			| REG_B & (FLAG_S | FLAG_5 | FLAG_3) \
+			| (REG_B ? 0 : FLAG_Z) \
+			| Cpu.tbl_parity[(TMP_WORD & 0x07) ^ REG_B] \
+			| (TMP_WORD > 255 ? (FLAG_C | FLAG_H) : 0);
+
+#define DO_REP_OUTD \
+	TMP_BYTE = PTR_READ(GET_HL); \
+	REG_B = REG_B - 1 & 0xFF; \
+	SET_MP(GET_BC - 1 & 0xFFFF); \
+	PTR_OUT(GET_BC, TMP_BYTE); \
+	SET_HL(GET_HL - 1 & 0xFFFF); \
+	TMP_WORD = TMP_BYTE + REG_L; \
+	REG_F = (TMP_BYTE >> FLAG_S_TO_N) & FLAG_N \
+			| REG_B & (FLAG_S | FLAG_5 | FLAG_3) \
+			| (REG_B ? 0 : FLAG_Z) \
+			| Cpu.tbl_parity[(TMP_WORD & 0x07) ^ REG_B] \
+			| (TMP_WORD > 255 ? (FLAG_C | FLAG_H) : 0);

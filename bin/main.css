@@ -1,0 +1,145 @@
+body {
+	font-size: 16px;
+	padding: 1em;
+	background-color: #271F2E;
+	color: #F2EBC9;
+	font-family: Georgia, "Times New Roman", Times;
+}
+
+a {
+	color: #D9B166;
+}
+
+h1 {
+	font-weight: normal;
+	margin: 0;
+	padding: 0;
+	font-size: 1.5em;
+	line-height: 1.7em;
+}
+
+h1 span {
+	padding-bottom: 1px;
+	border-bottom: 3px solid #A4A680;
+}
+
+.wrap {
+	padding-top: 1em;
+	overflow: hidden;
+	_zoom: 1;
+	width: 1000px;
+}
+
+#viewport {
+	position: relative;
+	width: 768px;
+	height: 512px;
+	float: left;
+}
+
+.c {
+	position: absolute;
+	width: 16px;
+	height: 16px;
+	background-image: url(zx80f.gif);
+	background-repeat: no-repeat;
+}
+
+.info {
+	float: left;
+	margin-left: 1em;
+	color: #A66B38;
+}
+
+.info strong, .info em {
+	color: #D9B166;
+}
+
+.info strong {
+	display: inline-block;
+	width: 3.5em;
+	_display: inline;
+	_zoom: 1;
+}
+
+.info input {
+	width: 10em;
+}
+
+#pc {
+	font-size: 0.7em;
+	color: #A4A680;
+}
+
+.keymap {
+	display: inline-block;
+	padding-top: 1em;
+	background-color: #000;
+	padding-left: 2em;
+	padding-right: 1em;
+	padding-bottom: 1em;
+	min-width: 980px;
+	_display: inline;
+	_zoom: 1;
+	_width: 980px;
+}
+
+.keymap .row {
+	overflow: hidden;
+}
+
+.keymap .row .key-wrap {
+	margin-right: 1em;
+	width: 5em;
+	height: 4em;
+	float: left;
+}
+
+.keymap .row .key-wrap .top {
+	text-align: center;
+	color: #D9B166;
+}
+
+.keymap .row .key-wrap .key {
+	position: relative;
+	height: 2em;
+	width: 5em;
+	margin-top: 0.2em;
+	background-color: #2040FF;
+	border-radius: 0.4em;
+	-moz-border-radius: 0.4em;
+	-webkit-border-radius: 0.4em;
+}
+
+.keymap .row .key-wrap .key .main {
+	position: absolute;
+	top: 0.1em;
+	left: 0.4em;
+	font-size: 1.4em;
+}
+
+.keymap .row .key-wrap .key .long {
+	top: 0.7em;
+	left: 0.4em;
+	font-size: 0.8em;
+}
+
+.keymap .row .key-wrap .key .shift {
+	position: absolute;
+	top: 0.1em;
+	right: 0.4em;
+	font-size: 1.4em;
+	color: #D9B166;
+}
+
+.keymap .row .key-wrap .key .psgfx {
+	position: absolute;
+	top: 0.4em;
+	right: 0.4em;
+	width: 16px;
+	height: 16px;
+	border: 2px solid #EEEEEE;
+	background-image: url(zx80f.gif);
+	background-repeat: no-repeat;
+}
+

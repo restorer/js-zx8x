@@ -1,0 +1,335 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+<head>
+	<meta http-equiv="Content-type" content="text/html;charset=UTF-8" />
+	<title>JavaScript ZX80 Emulator</title>
+	<meta name="keywords" content="canvas, no canvas, nocanvas, javascript, effect, effects" />
+	<meta name="description" content="JavaScript ZX80 Emulator" />
+	<link rel="stylesheet" type="text/css" href="main.css" />
+	<script type="text/javascript" src="z80.js"></script>
+	<script type="text/javascript" src="zx80rom.js"></script>
+	<script type="text/javascript" src="p-space.js"></script>
+	<script type="text/javascript" src="zx8x.js"></script>
+</head>
+<body onload="main()">
+	<h1><span>ZX80 Emulator</span></h1>
+	<div class="wrap">
+		<div id="viewport"></div>
+		<div class="info">
+			<input type="button" onclick="reset()" value="Reset" /><br />
+			<input type="button" onclick="load()" value="Load game" /><br />
+			<br />
+			<div id="pc"></div>
+			<br />
+			<em>Game:</em><br />
+			<br />
+			<strong>Run</strong> &mdash; R, ENTER<br />
+			<strong>Left</strong> &mdash; 6<br />
+			<strong>Right</strong> &mdash; 8<br />
+			<strong>Shoot</strong> &mdash; 0<br />
+			<br />
+			<em>Links:</em><br />
+			<br />
+			&rarr; <a href="#">Info about ZX80 (en)</a><br />
+			&rarr; <a href="http://nocanvas.blogspot.com/2010/03/sinclair-zx80-emulator.html#more">Немного о ZX80 (ru)</a><br />
+			<br />
+			&rarr; <a href="http://www.xs4all.nl/~fjkraan/comp/zx80/om/">ZX80 BASIC manual</a><br />
+			<br />
+			<a href="js-zx8x-src.tar.gz">Download sources</a><br />
+		</div>
+	</div>
+	<br /><br />
+	&rarr; <a href="http://nocanvas.blogspot.com">nocanvas project</a>
+	<br /><br />
+	<div class="keymap">
+		<div class="row">
+			<div class="key-wrap">
+				<div class="top">NOT</div>
+				<div class="key">
+					<div class="main">1</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">AND</div>
+				<div class="key">
+					<div class="main">2</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">THEN</div>
+				<div class="key">
+					<div class="main">3</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">TO</div>
+				<div class="key">
+					<div class="main">4</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">&larr;</div>
+				<div class="key">
+					<div class="main">5</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">&darr;</div>
+				<div class="key">
+					<div class="main">6</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">&uarr;</div>
+				<div class="key">
+					<div class="main">7</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">&rarr;</div>
+				<div class="key">
+					<div class="main">8</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">HOME</div>
+				<div class="key">
+					<div class="main">9</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">RUBOUT</div>
+				<div class="key">
+					<div class="main">0</div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="key-wrap">
+				<div class="top">NEW</div>
+				<div class="key">
+					<div class="main">Q</div>
+					<div class="psgfx" style="background-position:0 -32px;"></div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">LOAD</div>
+				<div class="key">
+					<div class="main">W</div>
+					<div class="psgfx" style="background-position:0 -48px;"></div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">SAVE</div>
+				<div class="key">
+					<div class="main">E</div>
+					<div class="psgfx" style="background-position:0 -64px;"></div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">RUN</div>
+				<div class="key">
+					<div class="main">R</div>
+					<div class="psgfx" style="background-position:0 -80px;"></div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">CONT</div>
+				<div class="key">
+					<div class="main">T</div>
+					<div class="psgfx" style="background-position:0 -160px;"></div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">REM</div>
+				<div class="key">
+					<div class="main">Y</div>
+					<div class="shift">"</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">IF</div>
+				<div class="key">
+					<div class="main">U</div>
+					<div class="shift">$</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">INPUT</div>
+				<div class="key">
+					<div class="main">I</div>
+					<div class="shift">(</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">PRINT</div>
+				<div class="key">
+					<div class="main">O</div>
+					<div class="shift">)</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">&nbsp;</div>
+				<div class="key">
+					<div class="main">P</div>
+					<div class="shift">*</div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="key-wrap">
+				<div class="top">LIST</div>
+				<div class="key">
+					<div class="main">A</div>
+					<div class="psgfx" style="background-position:0 -144px;"></div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">STOP</div>
+				<div class="key">
+					<div class="main">S</div>
+					<div class="psgfx" style="background-position:0 -128px;"></div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">DIM</div>
+				<div class="key">
+					<div class="main">D</div>
+					<div class="psgfx" style="background-position:0 -96px;"></div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">FOR</div>
+				<div class="key">
+					<div class="main">F</div>
+					<div class="psgfx" style="background-position:0 -112px;"></div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">GOTO</div>
+				<div class="key">
+					<div class="main">G</div>
+					<div class="psgfx" style="background-position:0 -176px;"></div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">POKE</div>
+				<div class="key">
+					<div class="main">H</div>
+					<div class="shift">**</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">RAND</div>
+				<div class="key">
+					<div class="main">J</div>
+					<div class="shift">&ndash;</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">LET</div>
+				<div class="key">
+					<div class="main">K</div>
+					<div class="shift">+</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">&nbsp;</div>
+				<div class="key">
+					<div class="main">L</div>
+					<div class="shift">=</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">EDIT</div>
+				<div class="key">
+					<div class="main long">NEW LINE</div>
+				</div>
+			</div>
+		</div>
+		<div class="row">
+			<div class="key-wrap">
+				<div class="top">&nbsp;</div>
+				<div class="key">
+					<div class="main long">SHIFT</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">&nbsp;</div>
+				<div class="key">
+					<div class="main">Z</div>
+					<div class="shift">=</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">CLEAR</div>
+				<div class="key">
+					<div class="main">X</div>
+					<div class="shift">;</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">CLS</div>
+				<div class="key">
+					<div class="main">C</div>
+					<div class="shift">?</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">GOSUB</div>
+				<div class="key">
+					<div class="main">V</div>
+					<div class="shift">/</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">RET</div>
+				<div class="key">
+					<div class="main">B</div>
+					<div class="shift">OR</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">NEXT</div>
+				<div class="key">
+					<div class="main">N</div>
+					<div class="shift">&lt;</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">&nbsp;</div>
+				<div class="key">
+					<div class="main">M</div>
+					<div class="shift">&gt;</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">&nbsp;</div>
+				<div class="key">
+					<div class="main">.</div>
+					<div class="shift">,</div>
+				</div>
+			</div>
+			<div class="key-wrap">
+				<div class="top">BREAK</div>
+				<div class="key">
+					<div class="main long">SPACE</div>
+					<div class="shift">&pound;</div>
+				</div>
+			</div>
+		</div>
+	</div>
+
+<script type="text/javascript">
+var _gaq = _gaq || [];
+_gaq.push(['_setAccount', 'UA-1782921-7']);
+_gaq.push(['_trackPageview']);
+(function() {
+var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+(document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(ga);
+})();
+</script>
+
+</body>
+</html>
