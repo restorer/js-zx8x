@@ -20,8 +20,7 @@
 #define FLAG_H_M16 0x1000
 #define FLAG_H_S16 8
 
-#define FLAG_PV_M8 0x80
-#define FLAG_PV_S8 5
+#define FLAG_PV_C8 0x80
 #define FLAG_PV_IFF_S8 2
 
 #define FLAG_C_TO_H 4

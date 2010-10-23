@@ -935,10 +935,10 @@
 #define DO_INC_8(X) \
 	REG_F = REG_F & FLAG_C | ((X & 0x0F) + 1 & FLAG_H); \
 	X = X + 1 & 0xFF; \
-	REG_F |= (X & FLAG_PV_M8) >> FLAG_PV_S8 | X & (FLAG_S | FLAG_5 | FLAG_3) | (X ? 0 : FLAG_Z);
+	REG_F |= (X == FLAG_PV_C8 ? FLAG_PV : 0) | X & (FLAG_S | FLAG_5 | FLAG_3) | (X ? 0 : FLAG_Z);
 
 #define DO_DEC_8(X) \
-	REG_F = REG_F & FLAG_C | FLAG_N | ((X & 0x0F) - 1 & FLAG_H) | (X & FLAG_PV_M8) >> FLAG_PV_S8; \
+	REG_F = REG_F & FLAG_C | FLAG_N | ((X & 0x0F) - 1 & FLAG_H) | (X == FLAG_PV_C8 ? FLAG_PV : 0); \
 	X = X - 1 & 0xFF; \
 	REG_F |= X & (FLAG_S | FLAG_5 | FLAG_3) | (X ? 0 : FLAG_Z);
 
