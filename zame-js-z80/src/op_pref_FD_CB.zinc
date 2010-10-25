@@ -88,56 +88,56 @@ OP_BIT_PORP     (Cpu_op_FD_CB_46, 0, GET_IY)                // BIT 0,(IY+N)
 OP_BIT_PORP     (Cpu_op_FD_CB_4E, 1, GET_IY)                // BIT 1,(IY+N)
 #define          Cpu_op_FD_CB_4F Cpu_op_FD_CB_4E
 
-#define          Cpu_op_FD_CB_50 Cpu_op_FD_CB_46
-#define          Cpu_op_FD_CB_51 Cpu_op_FD_CB_46
-#define          Cpu_op_FD_CB_52 Cpu_op_FD_CB_46
-#define          Cpu_op_FD_CB_53 Cpu_op_FD_CB_46
-#define          Cpu_op_FD_CB_54 Cpu_op_FD_CB_46
-#define          Cpu_op_FD_CB_55 Cpu_op_FD_CB_46
+#define          Cpu_op_FD_CB_50 Cpu_op_FD_CB_56
+#define          Cpu_op_FD_CB_51 Cpu_op_FD_CB_56
+#define          Cpu_op_FD_CB_52 Cpu_op_FD_CB_56
+#define          Cpu_op_FD_CB_53 Cpu_op_FD_CB_56
+#define          Cpu_op_FD_CB_54 Cpu_op_FD_CB_56
+#define          Cpu_op_FD_CB_55 Cpu_op_FD_CB_56
 OP_BIT_PORP     (Cpu_op_FD_CB_56, 2, GET_IY)                // BIT 2,(IY+N)
-#define          Cpu_op_FD_CB_57 Cpu_op_FD_CB_46
-#define          Cpu_op_FD_CB_58 Cpu_op_FD_CB_4E
-#define          Cpu_op_FD_CB_59 Cpu_op_FD_CB_4E
-#define          Cpu_op_FD_CB_5A Cpu_op_FD_CB_4E
-#define          Cpu_op_FD_CB_5B Cpu_op_FD_CB_4E
-#define          Cpu_op_FD_CB_5C Cpu_op_FD_CB_4E
-#define          Cpu_op_FD_CB_5D Cpu_op_FD_CB_4E
+#define          Cpu_op_FD_CB_57 Cpu_op_FD_CB_56
+#define          Cpu_op_FD_CB_58 Cpu_op_FD_CB_5E
+#define          Cpu_op_FD_CB_59 Cpu_op_FD_CB_5E
+#define          Cpu_op_FD_CB_5A Cpu_op_FD_CB_5E
+#define          Cpu_op_FD_CB_5B Cpu_op_FD_CB_5E
+#define          Cpu_op_FD_CB_5C Cpu_op_FD_CB_5E
+#define          Cpu_op_FD_CB_5D Cpu_op_FD_CB_5E
 OP_BIT_PORP     (Cpu_op_FD_CB_5E, 3, GET_IY)                // BIT 3,(IY+N)
-#define          Cpu_op_FD_CB_5F Cpu_op_FD_CB_4E
+#define          Cpu_op_FD_CB_5F Cpu_op_FD_CB_5E
 
-#define          Cpu_op_FD_CB_60 Cpu_op_FD_CB_46
-#define          Cpu_op_FD_CB_61 Cpu_op_FD_CB_46
-#define          Cpu_op_FD_CB_62 Cpu_op_FD_CB_46
-#define          Cpu_op_FD_CB_63 Cpu_op_FD_CB_46
-#define          Cpu_op_FD_CB_64 Cpu_op_FD_CB_46
-#define          Cpu_op_FD_CB_65 Cpu_op_FD_CB_46
+#define          Cpu_op_FD_CB_60 Cpu_op_FD_CB_66
+#define          Cpu_op_FD_CB_61 Cpu_op_FD_CB_66
+#define          Cpu_op_FD_CB_62 Cpu_op_FD_CB_66
+#define          Cpu_op_FD_CB_63 Cpu_op_FD_CB_66
+#define          Cpu_op_FD_CB_64 Cpu_op_FD_CB_66
+#define          Cpu_op_FD_CB_65 Cpu_op_FD_CB_66
 OP_BIT_PORP     (Cpu_op_FD_CB_66, 4, GET_IY)                // BIT 4,(IY+N)
-#define          Cpu_op_FD_CB_67 Cpu_op_FD_CB_46
-#define          Cpu_op_FD_CB_68 Cpu_op_FD_CB_4E
-#define          Cpu_op_FD_CB_69 Cpu_op_FD_CB_4E
-#define          Cpu_op_FD_CB_6A Cpu_op_FD_CB_4E
-#define          Cpu_op_FD_CB_6B Cpu_op_FD_CB_4E
-#define          Cpu_op_FD_CB_6C Cpu_op_FD_CB_4E
-#define          Cpu_op_FD_CB_6D Cpu_op_FD_CB_4E
+#define          Cpu_op_FD_CB_67 Cpu_op_FD_CB_66
+#define          Cpu_op_FD_CB_68 Cpu_op_FD_CB_6E
+#define          Cpu_op_FD_CB_69 Cpu_op_FD_CB_6E
+#define          Cpu_op_FD_CB_6A Cpu_op_FD_CB_6E
+#define          Cpu_op_FD_CB_6B Cpu_op_FD_CB_6E
+#define          Cpu_op_FD_CB_6C Cpu_op_FD_CB_6E
+#define          Cpu_op_FD_CB_6D Cpu_op_FD_CB_6E
 OP_BIT_PORP     (Cpu_op_FD_CB_6E, 5, GET_IY)                // BIT 5,(IY+N)
-#define          Cpu_op_FD_CB_6F Cpu_op_FD_CB_4E
+#define          Cpu_op_FD_CB_6F Cpu_op_FD_CB_6E
 
-#define          Cpu_op_FD_CB_70 Cpu_op_FD_CB_46
-#define          Cpu_op_FD_CB_71 Cpu_op_FD_CB_46
-#define          Cpu_op_FD_CB_72 Cpu_op_FD_CB_46
-#define          Cpu_op_FD_CB_73 Cpu_op_FD_CB_46
-#define          Cpu_op_FD_CB_74 Cpu_op_FD_CB_46
-#define          Cpu_op_FD_CB_75 Cpu_op_FD_CB_46
+#define          Cpu_op_FD_CB_70 Cpu_op_FD_CB_76
+#define          Cpu_op_FD_CB_71 Cpu_op_FD_CB_76
+#define          Cpu_op_FD_CB_72 Cpu_op_FD_CB_76
+#define          Cpu_op_FD_CB_73 Cpu_op_FD_CB_76
+#define          Cpu_op_FD_CB_74 Cpu_op_FD_CB_76
+#define          Cpu_op_FD_CB_75 Cpu_op_FD_CB_76
 OP_BIT_PORP     (Cpu_op_FD_CB_76, 6, GET_IY)                // BIT 6,(IY+N)
-#define          Cpu_op_FD_CB_77 Cpu_op_FD_CB_46
-#define          Cpu_op_FD_CB_78 Cpu_op_FD_CB_4E
-#define          Cpu_op_FD_CB_79 Cpu_op_FD_CB_4E
-#define          Cpu_op_FD_CB_7A Cpu_op_FD_CB_4E
-#define          Cpu_op_FD_CB_7B Cpu_op_FD_CB_4E
-#define          Cpu_op_FD_CB_7C Cpu_op_FD_CB_4E
-#define          Cpu_op_FD_CB_7D Cpu_op_FD_CB_4E
+#define          Cpu_op_FD_CB_77 Cpu_op_FD_CB_76
+#define          Cpu_op_FD_CB_78 Cpu_op_FD_CB_7E
+#define          Cpu_op_FD_CB_79 Cpu_op_FD_CB_7E
+#define          Cpu_op_FD_CB_7A Cpu_op_FD_CB_7E
+#define          Cpu_op_FD_CB_7B Cpu_op_FD_CB_7E
+#define          Cpu_op_FD_CB_7C Cpu_op_FD_CB_7E
+#define          Cpu_op_FD_CB_7D Cpu_op_FD_CB_7E
 OP_BIT_PORP     (Cpu_op_FD_CB_7E, 7, GET_IY)                // BIT 7,(IY+N)
-#define          Cpu_op_FD_CB_7F Cpu_op_FD_CB_4E
+#define          Cpu_op_FD_CB_7F Cpu_op_FD_CB_7E
 
 OP_LD_RES_PORP  (Cpu_op_FD_CB_80, 0, REG_B, GET_IY)         // LD B,RES 0,(IY+N)
 OP_LD_RES_PORP  (Cpu_op_FD_CB_81, 0, REG_C, GET_IY)         // LD C,RES 0,(IY+N)
