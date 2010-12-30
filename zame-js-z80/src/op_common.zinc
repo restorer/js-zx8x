@@ -437,8 +437,9 @@
 #define OP_OUT_N_A(FN,...) \
 	DECL_FUNC FN() { \
 		TMP_WORD = REG_A << 8 | READ_BYTE(); \
+		TSTATE_ADD(8-4); \
 		DO_OUT(TMP_WORD, REG_A); \
-		TSTATE_ADD(11-4); \
+		TSTATE_ADD(11-8); \
 		__VA_ARGS__ \
 	}
 
@@ -618,9 +619,10 @@
 
 #define OP_OUT_BC_R_P00(FN,R) \
 	DECL_FUNC FN() { \
+		TSTATE_ADD(5-4); \
 		PTR_OUT(GET_BC, R); \
 		SET_MP(GET_BC + 1 & 0xFFFF); \
-		TSTATE_ADD(8-4); \
+		TSTATE_ADD(8-5); \
 		DO_PREF_00; \
 	}
 
@@ -635,9 +637,10 @@
 
 #define OP_OUT_BC_0_P00(FN) \
 	DECL_FUNC FN() { \
+		TSTATE_ADD(5-4); \
 		PTR_OUT(GET_BC, 0); \
 		SET_MP(GET_BC + 1 & 0xFFFF); \
-		TSTATE_ADD(8-4); \
+		TSTATE_ADD(8-5); \
 		DO_PREF_00; \
 	}
 
@@ -792,14 +795,14 @@
 #define OP_INI_P00(FN) \
 	DECL_FUNC FN() { \
 		DO_REP_INI; \
-		TSTATE_ADD(12-4); \
+		TSTATE_ADD(12-9); \
 		DO_PREF_00; \
 	}
 
 #define OP_IND_P00(FN) \
 	DECL_FUNC FN() { \
 		DO_REP_IND; \
-		TSTATE_ADD(12-4); \
+		TSTATE_ADD(12-9); \
 		DO_PREF_00; \
 	}
 
@@ -1162,7 +1165,9 @@
 	}
 
 #define DO_REP_INI \
+	TSTATE_ADD(6-4); \
 	TMP_BYTE = PTR_IN(GET_BC); \
+	TSTATE_ADD(9-6); \
 	PTR_WRITE(GET_HL, TMP_BYTE); \
 	SET_MP(GET_BC + 1 & 0xFFFF); \
 	REG_B = REG_B - 1 & 0xFF; \
@@ -1175,7 +1180,9 @@
 			| (TMP_WORD > 255 ? (FLAG_C | FLAG_H) : 0);
 
 #define DO_REP_IND \
+	TSTATE_ADD(6-4); \
 	TMP_BYTE = PTR_IN(GET_BC); \
+	TSTATE_ADD(9-6); \
 	PTR_WRITE(GET_HL, TMP_BYTE); \
 	SET_MP(GET_BC - 1 & 0xFFFF); \
 	REG_B = REG_B - 1 & 0xFF; \
@@ -1190,15 +1197,16 @@
 #define DO_REP_IN_OUT_REP \
 	if (REG_B) { \
 		SET_PC(GET_PC - 2 & 0xFFFF); \
-		TSTATE_ADD(17-4); \
+		TSTATE_ADD(17-9); \
 	} else { \
-		TSTATE_ADD(12-4); \
+		TSTATE_ADD(12-9); \
 	}
 
 #define DO_REP_OUTI \
 	TMP_BYTE = PTR_READ(GET_HL); \
 	REG_B = REG_B - 1 & 0xFF; \
 	SET_MP(GET_BC + 1 & 0xFFFF); \
+	TSTATE_ADD(9-4); \
 	PTR_OUT(GET_BC, TMP_BYTE); \
 	SET_HL(GET_HL + 1 & 0xFFFF); \
 	TMP_WORD = TMP_BYTE + REG_L; \
@@ -1212,6 +1220,7 @@
 	TMP_BYTE = PTR_READ(GET_HL); \
 	REG_B = REG_B - 1 & 0xFF; \
 	SET_MP(GET_BC - 1 & 0xFFFF); \
+	TSTATE_ADD(9-4); \
 	PTR_OUT(GET_BC, TMP_BYTE); \
 	SET_HL(GET_HL - 1 & 0xFFFF); \
 	TMP_WORD = TMP_BYTE + REG_L; \
